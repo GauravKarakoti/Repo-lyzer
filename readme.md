@@ -93,6 +93,10 @@ MIT License © 2026 Agniva Mukherjee
 
 ## How it looks
 <img src="https://res.cloudinary.com/dhyii4oiw/image/upload/v1767290545/Screenshot_2026-01-01_224310_c0hhr8.png" alt="This is the Opening Screen" width="auto" height="auto">
+<img src="https://res.cloudinary.com/dhyii4oiw/image/upload/v1767324721/Screenshot_2026-01-02_090050_u6xweq.png" alt="" width="auto" height="auto">
+<img src="https://res.cloudinary.com/dhyii4oiw/image/upload/v1767324721/Screenshot_2026-01-02_090043_keqfs4.png" alt="" width="auto" height="auto">
+<img src="https://res.cloudinary.com/dhyii4oiw/image/upload/v1767324721/Screenshot_2026-01-02_090104_dm7bgk.png" alt="" width="auto" height="auto">
+<img src="https://res.cloudinary.com/dhyii4oiw/image/upload/v1767324829/Screenshot_2026-01-02_090335_acms5i.png" alt="" width="auto" height="auto">
 
 
 ---
