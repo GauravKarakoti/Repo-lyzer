@@ -1,5 +1,7 @@
 # Repo-lyzer
 
+<img src="https://res.cloudinary.com/dhyii4oiw/image/upload/v1767324445/Screenshot_2026-01-02_085503_ros5gz.png" alt="This is the logo" width="auto" height="auto">
+
 **Repo-lyzer** is a modern, terminal-based CLI tool written in **Golang** that analyzes GitHub repositories and presents insights in a beautifully formatted, interactive dashboard. It is designed for developers, recruiters, and open-source enthusiasts to quickly evaluate a repository’s health, activity, and contributor statistics.
 
 ---
@@ -95,7 +97,7 @@ MIT License © 2026 Agniva Mukherjee
 
 ---
 
-##How to Install(For Users)??
+## How to Install(For Users)??
 1.Go to the terminal and run
 ```bash
 go install github.com/agnivo988/Repo-lyzer@v1.0.0
