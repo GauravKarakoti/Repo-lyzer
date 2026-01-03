@@ -92,16 +92,16 @@ func (pt *ProgressTracker) GetProgressBar(width int) string {
 		fill += "█"
 	}
 
-	// SKELETON EFFECT: Create a shimmering/pulsing effect in the empty area
+	// SKELETON EFFECT: Create a shimmering effect in the empty area
 	elapsedMs := time.Since(pt.startTime).Milliseconds()
 	shimmerPos := int((elapsedMs / 150) % int64(emptyWidth+1))
 
 	empty := ""
 	for i := 0; i < emptyWidth; i++ {
 		if i == shimmerPos || i == shimmerPos-1 {
-			empty += "▒" // The "shimmer" or "ghost" highlight
+			empty += "▒" // The "shimmer" highlight
 		} else {
-			empty += "░" // The standard empty block
+			empty += "░" // The standard background
 		}
 	}
 
