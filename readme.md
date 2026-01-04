@@ -120,26 +120,26 @@ This will launch the interactive Repo-lyzer terminal dashboard.
 
 Analyze a repository:
 ```bash
-repo-lyzer analyze https://github.com/golang/go
+repo-lyzer analyze golang/go
 ```
-**🔄 Compare two repositories:**
+**🔄 Compare two repositories**
+Repository comparison is available through the interactive menu.  
+Launch the application and select **Compare Repositories** from the dashboard.
 
-```bash
-repo-lyzer compare https://github.com/golang/go https://github.com/kubernetes/kubernetes
-```
 **📝 Export Analysis Results**
-Export repository analysis as Markdown:
-```bash
-repo-lyzer analyze https://github.com/golang/go --export markdown
-```
+Export functionality is available from within the interactive dashboard.  
+After analysis, choose the export option from the menu to save results.
+
+
 ## 🔐 GitHub API Configuration (Optional)
 
 Repo-lyzer uses the GitHub REST API.
 To get higher rate limits and smoother analysis, you can provide a GitHub Personal Access Token.
 
-⚙️ Setup
+## ⚙️ Setup
 
-- 🔑 Generate a token from: https://github.com/settings/tokens
+- 🔑 Generate a token from: 
+  [GitHub Personal Access Tokens](https://github.com/settings/tokens)
 
 - 🌍 Set it as an environment variable:
 ```bash
