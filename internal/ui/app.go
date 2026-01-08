@@ -800,6 +800,9 @@ func (m MainModel) analyzeRepo(repoName string) tea.Cmd {
 
 		// Stage 6: Analyze dependencies
 		deps, _ := analyzer.AnalyzeDependencies(client, parts[0], parts[1], repo.DefaultBranch, fileTree)
+
+		// Stage 7: Security vulnerability scan
+		security, _ := analyzer.ScanDependencies(deps)
 		tracker.NextStage()
 
 		// Mark complete
@@ -817,6 +820,7 @@ func (m MainModel) analyzeRepo(repoName string) tea.Cmd {
 			MaturityScore: maturityScore,
 			MaturityLevel: maturityLevel,
 			Dependencies:  deps,
+			Security:      security,
 		}
 
 		// Save to cache
