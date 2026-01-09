@@ -1,4 +1,3 @@
-
 package ui
 
 import (
@@ -105,7 +104,7 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "j":
 			if m.showExport {
 				return m, func() tea.Msg {
-					_, err := ExportJSON(m.data, "analysis.json")
+					_,err := ExportJSON(m.data, "analysis.json")
 					if err != nil {
 						return exportMsg{err, ""}
 					}
@@ -116,7 +115,7 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "m":
 			if m.showExport {
 				return m, func() tea.Msg {
-					_, err := ExportMarkdown(m.data, "analysis.md")
+					_,err := ExportMarkdown(m.data, "analysis.md")
 					if err != nil {
 						return exportMsg{err, ""}
 					}
@@ -131,6 +130,12 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Refresh - re-analyze current repo
 			if m.data.Repo != nil {
 				return m, func() tea.Msg { return "refresh_data" }
+			}
+
+		case "b":
+			// Add to favorites
+			if m.data.Repo != nil {
+				return m, func() tea.Msg { return "add_to_favorites" }
 			}
 
 		// View switching keybindings
@@ -155,11 +160,11 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.showHelp = false
 			m.showExport = false
 		case "6":
-			m.currentView = viewDependencies
+			m.currentView = viewContributorInsights
 			m.showHelp = false
 			m.showExport = false
 		case "7":
-			m.currentView = viewSecurity
+			m.currentView = viewCodeQuality
 			m.showHelp = false
 			m.showExport = false
 		case "8":
@@ -252,7 +257,7 @@ func (m DashboardModel) View() string {
 
 	// Navigation tabs
 	tabs := m.renderTabs()
-	footer := SubtleStyle.Render("←→/hl: switch view • 1-6: jump to view • e: export • f: file tree • ?: help • q: back")
+	footer := SubtleStyle.Render("←→/hl: switch view • 1-9: jump to view • e: export • f: file tree • ?: help • q: back")
 
 	fullContent := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -472,11 +477,7 @@ func (m DashboardModel) dependenciesView() string {
 	return lipgloss.JoinVertical(lipgloss.Left, header, content)
 }
 
-func boolToYesNo(b bool) string {
-	if b {
-		return "✓ Yes"
-	}
-	return "✗ No"
+	return lipgloss.JoinVertical(lipgloss.Left, header, BoxStyle.Render(content))
 }
 
 func (m DashboardModel) securityView() string {
@@ -511,6 +512,7 @@ func (m DashboardModel) securityView() string {
 			vulnLines = append(vulnLines, fmt.Sprintf("... and %d more", len(sec.Vulnerabilities)-maxShow))
 		}
 	}
+}
 
 	content := BoxStyle.Render(summary) + "\n" + BoxStyle.Render(strings.Join(vulnLines, "\n"))
 	return lipgloss.JoinVertical(lipgloss.Left, header, content)
@@ -593,16 +595,18 @@ func (m DashboardModel) helpView() string {
 	help := `
 Dashboard Navigation:
   ←/→ or h/l    Switch between views
-  1-7           Jump to specific view
+  1-9           Jump to specific view
   
 Views:
   1  Overview     - Health, Bus Factor, Maturity
   2  Repo         - Repository details
   3  Languages    - Language breakdown
   4  Activity     - Commit activity chart
-  5  Contributors - Top contributors
-  6  Recruiter    - Summary for recruiters
-  7  API Status   - GitHub API rate limits
+  5  Contributors - Top contributors list
+  6  Insights     - Detailed contributor insights
+  7  Quality      - Code quality metrics
+  8  Recruiter    - Summary for recruiters
+  9  API Status   - GitHub API rate limits
 
 Actions:
   e             Toggle export menu
