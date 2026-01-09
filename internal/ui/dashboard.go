@@ -20,6 +20,8 @@ const (
 	viewLanguages
 	viewActivity
 	viewContributors
+	viewContributorInsights
+	viewCodeQuality
 	viewDependencies
 	viewSecurity
 	viewLicense
@@ -442,6 +444,13 @@ func (m DashboardModel) contributorsView() string {
 	return lipgloss.JoinVertical(lipgloss.Left, header, BoxStyle.Render(strings.Join(lines, "\n")))
 }
 
+func boolToYesNo(b bool) string {
+	if b {
+		return "✓ Yes"
+	}
+	return "✗ No"
+}
+
 func (m DashboardModel) dependenciesView() string {
 	header := TitleStyle.Render("� Dependenrcies")
 
@@ -477,9 +486,6 @@ func (m DashboardModel) dependenciesView() string {
 	return lipgloss.JoinVertical(lipgloss.Left, header, content)
 }
 
-	return lipgloss.JoinVertical(lipgloss.Left, header, BoxStyle.Render(content))
-}
-
 func (m DashboardModel) securityView() string {
 	header := TitleStyle.Render("🔒 Security Scan")
 
@@ -512,7 +518,6 @@ func (m DashboardModel) securityView() string {
 			vulnLines = append(vulnLines, fmt.Sprintf("... and %d more", len(sec.Vulnerabilities)-maxShow))
 		}
 	}
-}
 
 	content := BoxStyle.Render(summary) + "\n" + BoxStyle.Render(strings.Join(vulnLines, "\n"))
 	return lipgloss.JoinVertical(lipgloss.Left, header, content)
