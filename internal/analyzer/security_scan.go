@@ -1,5 +1,4 @@
 // Package analyzer provides security vulnerability scanning for dependencies.
-// This file implements vulnerability detection using the OSV (Open Source Vulnerabilities) database.
 package analyzer
 
 import (
@@ -10,19 +9,19 @@ import (
 	"time"
 )
 
-// Vulnerability represents a security vulnerability found in a dependency
+// Vulnerability represents a security vulnerability
 type Vulnerability struct {
-	ID          string   `json:"id"`           // CVE or GHSA ID
-	Summary     string   `json:"summary"`      // Brief description
-	Severity    string   `json:"severity"`     // CRITICAL, HIGH, MEDIUM, LOW
-	Package     string   `json:"package"`      // Affected package name
-	Version     string   `json:"version"`      // Affected version
-	FixedIn     string   `json:"fixed_in"`     // Version that fixes the issue
-	References  []string `json:"references"`   // Links to advisories
-	PublishedAt string   `json:"published_at"` // When vulnerability was published
+	ID          string   `json:"id"`
+	Summary     string   `json:"summary"`
+	Severity    string   `json:"severity"`
+	Package     string   `json:"package"`
+	Version     string   `json:"version"`
+	FixedIn     string   `json:"fixed_in"`
+	References  []string `json:"references"`
+	PublishedAt string   `json:"published_at"`
 }
 
-// SecurityScanResult holds the complete security scan results
+// SecurityScanResult holds security scan results
 type SecurityScanResult struct {
 	Vulnerabilities []Vulnerability `json:"vulnerabilities"`
 	TotalCount      int             `json:"total_count"`
@@ -32,10 +31,9 @@ type SecurityScanResult struct {
 	LowCount        int             `json:"low_count"`
 	ScannedPackages int             `json:"scanned_packages"`
 	ScanTime        time.Time       `json:"scan_time"`
-	SecurityScore   int             `json:"security_score"` // 0-100, higher is better
+	SecurityScore   int             `json:"security_score"`
 }
 
-// OSV API structures
 type osvQuery struct {
 	Package struct {
 		Name      string `json:"name"`
@@ -51,32 +49,24 @@ type osvResponse struct {
 type osvVuln struct {
 	ID       string `json:"id"`
 	Summary  string `json:"summary"`
-	Details  string `json:"details"`
 	Severity []struct {
 		Type  string `json:"type"`
 		Score string `json:"score"`
 	} `json:"severity"`
 	Affected []struct {
-		Package struct {
-			Name      string `json:"name"`
-			Ecosystem string `json:"ecosystem"`
-		} `json:"package"`
 		Ranges []struct {
-			Type   string `json:"type"`
 			Events []struct {
-				Introduced string `json:"introduced,omitempty"`
-				Fixed      string `json:"fixed,omitempty"`
+				Fixed string `json:"fixed,omitempty"`
 			} `json:"events"`
 		} `json:"ranges"`
 	} `json:"affected"`
 	References []struct {
-		Type string `json:"type"`
-		URL  string `json:"url"`
+		URL string `json:"url"`
 	} `json:"references"`
 	Published string `json:"published"`
 }
 
-// ScanDependencies scans dependencies for known vulnerabilities using OSV database
+// ScanDependencies scans dependencies for vulnerabilities
 func ScanDependencies(deps *DependencyAnalysis) (*SecurityScanResult, error) {
 	if deps == nil || len(deps.Files) == 0 {
 		return &SecurityScanResult{
@@ -94,25 +84,19 @@ func ScanDependencies(deps *DependencyAnalysis) (*SecurityScanResult, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	for _, file := range deps.Files {
-		ecosystem := mapFileTypeToEcosystem(file.FileType)
+		ecosystem := mapEcosystem(file.FileType)
 		if ecosystem == "" {
 			continue
 		}
 
 		for _, dep := range file.Dependencies {
 			result.ScannedPackages++
-
-			// Query OSV API
-			vulns, err := queryOSV(client, dep.Name, dep.Version, ecosystem)
-			if err != nil {
-				continue // Skip on error, don't fail entire scan
-			}
+			vulns, _ := queryOSV(client, dep.Name, dep.Version, ecosystem)
 
 			for _, v := range vulns {
-				vuln := convertOSVVuln(v, dep.Name, dep.Version)
+				vuln := convertVuln(v, dep.Name, dep.Version)
 				result.Vulnerabilities = append(result.Vulnerabilities, vuln)
 
-				// Count by severity
 				switch vuln.Severity {
 				case "CRITICAL":
 					result.CriticalCount++
@@ -128,122 +112,61 @@ func ScanDependencies(deps *DependencyAnalysis) (*SecurityScanResult, error) {
 	}
 
 	result.TotalCount = len(result.Vulnerabilities)
-	result.SecurityScore = calculateSecurityScore(result)
-
+	result.SecurityScore = calcSecurityScore(result)
 	return result, nil
 }
 
-// mapFileTypeToEcosystem maps our file types to OSV ecosystem names
-func mapFileTypeToEcosystem(fileType string) string {
-	ecosystems := map[string]string{
-		"npm":    "npm",
-		"go":     "Go",
-		"python": "PyPI",
-		"rust":   "crates.io",
-		"ruby":   "RubyGems",
-	}
-	return ecosystems[fileType]
+func mapEcosystem(fileType string) string {
+	m := map[string]string{"npm": "npm", "go": "Go", "python": "PyPI", "rust": "crates.io", "ruby": "RubyGems"}
+	return m[fileType]
 }
 
-// queryOSV queries the OSV API for vulnerabilities
-func queryOSV(client *http.Client, packageName, version, ecosystem string) ([]osvVuln, error) {
+func queryOSV(client *http.Client, pkg, ver, eco string) ([]osvVuln, error) {
 	query := osvQuery{}
-	query.Package.Name = packageName
-	query.Package.Ecosystem = ecosystem
-
-	// Clean version string
-	cleanVer := cleanVersionForOSV(version)
-	if cleanVer != "" && cleanVer != "*" {
-		query.Version = cleanVer
+	query.Package.Name = pkg
+	query.Package.Ecosystem = eco
+	ver = strings.TrimPrefix(strings.TrimPrefix(ver, "^"), "~")
+	if ver != "" && ver != "*" {
+		query.Version = ver
 	}
 
-	jsonData, err := json.Marshal(query)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.Post(
-		"https://api.osv.dev/v1/query",
-		"application/json",
-		strings.NewReader(string(jsonData)),
-	)
+	data, _ := json.Marshal(query)
+	resp, err := client.Post("https://api.osv.dev/v1/query", "application/json", strings.NewReader(string(data)))
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("OSV API error: %d", resp.StatusCode)
-	}
-
-	var osvResp osvResponse
-	if err := json.NewDecoder(resp.Body).Decode(&osvResp); err != nil {
-		return nil, err
-	}
-
-	return osvResp.Vulns, nil
+	var r osvResponse
+	json.NewDecoder(resp.Body).Decode(&r)
+	return r.Vulns, nil
 }
 
-// cleanVersionForOSV removes version prefixes for OSV API
-func cleanVersionForOSV(version string) string {
-	version = strings.TrimSpace(version)
-	// Remove common prefixes
-	version = strings.TrimPrefix(version, "^")
-	version = strings.TrimPrefix(version, "~")
-	version = strings.TrimPrefix(version, ">=")
-	version = strings.TrimPrefix(version, "<=")
-	version = strings.TrimPrefix(version, ">")
-	version = strings.TrimPrefix(version, "<")
-	version = strings.TrimPrefix(version, "=")
-	version = strings.TrimPrefix(version, "v")
-	return version
-}
-
-// convertOSVVuln converts OSV vulnerability to our format
-func convertOSVVuln(osv osvVuln, pkgName, pkgVersion string) Vulnerability {
-	vuln := Vulnerability{
-		ID:          osv.ID,
-		Summary:     osv.Summary,
-		Package:     pkgName,
-		Version:     pkgVersion,
-		PublishedAt: osv.Published,
-	}
-
-	// Extract severity
-	vuln.Severity = extractSeverity(osv)
-
-	// Extract fixed version
-	for _, affected := range osv.Affected {
-		for _, r := range affected.Ranges {
-			for _, event := range r.Events {
-				if event.Fixed != "" {
-					vuln.FixedIn = event.Fixed
-					break
+func convertVuln(o osvVuln, pkg, ver string) Vulnerability {
+	v := Vulnerability{ID: o.ID, Summary: o.Summary, Package: pkg, Version: ver, PublishedAt: o.Published}
+	v.Severity = getSeverity(o)
+	for _, a := range o.Affected {
+		for _, r := range a.Ranges {
+			for _, e := range r.Events {
+				if e.Fixed != "" {
+					v.FixedIn = e.Fixed
 				}
 			}
 		}
 	}
-
-	// Extract references
-	for _, ref := range osv.References {
-		if ref.URL != "" {
-			vuln.References = append(vuln.References, ref.URL)
+	for _, ref := range o.References {
+		if ref.URL != "" && len(v.References) < 3 {
+			v.References = append(v.References, ref.URL)
 		}
 	}
-
-	// Limit references to 3
-	if len(vuln.References) > 3 {
-		vuln.References = vuln.References[:3]
-	}
-
-	return vuln
+	return v
 }
 
-// extractSeverity extracts severity from OSV vulnerability
-func extractSeverity(osv osvVuln) string {
-	for _, sev := range osv.Severity {
-		if sev.Type == "CVSS_V3" {
-			score := parseCVSSScore(sev.Score)
+func getSeverity(o osvVuln) string {
+	for _, s := range o.Severity {
+		if s.Type == "CVSS_V3" {
+			var score float64
+			fmt.Sscanf(s.Score, "%f", &score)
 			if score >= 9.0 {
 				return "CRITICAL"
 			} else if score >= 7.0 {
@@ -254,68 +177,36 @@ func extractSeverity(osv osvVuln) string {
 			return "LOW"
 		}
 	}
-
-	// Default based on ID prefix
-	if strings.HasPrefix(osv.ID, "GHSA") {
-		return "MEDIUM" // Default for GitHub advisories
-	}
-	return "UNKNOWN"
+	return "MEDIUM"
 }
 
-// parseCVSSScore parses CVSS score from string
-func parseCVSSScore(score string) float64 {
-	var s float64
-	fmt.Sscanf(score, "%f", &s)
-	return s
-}
-
-// calculateSecurityScore calculates overall security score (0-100)
-func calculateSecurityScore(result *SecurityScanResult) int {
-	if result.ScannedPackages == 0 {
-		return 100
-	}
-
-	// Deduct points based on vulnerabilities
-	score := 100
-	score -= result.CriticalCount * 25
-	score -= result.HighCount * 15
-	score -= result.MediumCount * 5
-	score -= result.LowCount * 2
-
+func calcSecurityScore(r *SecurityScanResult) int {
+	score := 100 - r.CriticalCount*25 - r.HighCount*15 - r.MediumCount*5 - r.LowCount*2
 	if score < 0 {
 		score = 0
 	}
 	return score
 }
 
-// GetSeverityEmoji returns emoji for severity level
-func GetSeverityEmoji(severity string) string {
-	switch severity {
-	case "CRITICAL":
-		return "🔴"
-	case "HIGH":
-		return "🟠"
-	case "MEDIUM":
-		return "🟡"
-	case "LOW":
-		return "🟢"
-	default:
-		return "⚪"
+// GetSeverityEmoji returns emoji for severity
+func GetSeverityEmoji(sev string) string {
+	m := map[string]string{"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🟢"}
+	if e, ok := m[sev]; ok {
+		return e
 	}
+	return "⚪"
 }
 
-// GetSecurityGrade returns letter grade based on score
+// GetSecurityGrade returns letter grade
 func GetSecurityGrade(score int) string {
-	switch {
-	case score >= 90:
+	if score >= 90 {
 		return "A"
-	case score >= 80:
+	} else if score >= 80 {
 		return "B"
-	case score >= 70:
+	} else if score >= 70 {
 		return "C"
-	case score >= 60:
+	} else if score >= 60 {
 		return "D"
-	default:
-		return "F"
 	}
+	return "F"
 }

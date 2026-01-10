@@ -22,6 +22,7 @@ type AnalysisResult struct {
 	ContributorInsights  *analyzer.ContributorInsights
 	Security             *analyzer.SecurityScanResult
 	CodeQuality          *analyzer.CodeQualityMetrics
+	License              *analyzer.LicenseAnalysis
 }
 
 // CachedAnalysisResult wraps AnalysisResult with cache metadata
