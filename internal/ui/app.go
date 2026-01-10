@@ -859,6 +859,7 @@ func (m MainModel) analyzeRepo(repoName string) tea.Cmd {
 		busFactor, busRisk := analyzer.BusFactor(contributors)
 		maturityScore, maturityLevel := analyzer.RepoMaturityScore(repo, len(commits), len(contributors), false)
 
+		
 		// Stage 6: Analyze dependencies and contributor insights
 		deps, _ := analyzer.AnalyzeDependencies(client, parts[0], parts[1], repo.DefaultBranch, fileTree)
 		contributorInsights := analyzer.AnalyzeContributors(contributors)

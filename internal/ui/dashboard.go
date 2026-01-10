@@ -735,7 +735,7 @@ func (m DashboardModel) recruiterView() string {
 			"👥 Contributors: %d\n"+
 			"🏗️ Maturity: %s (%d)\n"+
 			"⚠️ Bus Factor: %d - %s\n"+
-			"🔥 Activity: %s\n"+
+			"� Activity: %s\n"+
 			"💚 Health Score: %d/100",
 		m.data.Repo.FullName,
 		m.data.Repo.Stars,
