@@ -15,6 +15,9 @@ type MenuModel struct {
 	height         int
 }
 
+// NewMenuModel creates a new menu model with default options for repository analysis.
+// It initializes the menu with choices for analyzing a repository, comparing repositories, and exiting.
+// Returns the initialized MenuModel with cursor at the first option.
 func NewMenuModel() MenuModel {
 	return MenuModel{
 		choices: []string{

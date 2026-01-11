@@ -12,6 +12,10 @@ type Client struct {
 	token string
 }
 
+// NewClient creates a new GitHub API client.
+// It initializes the client with an HTTP client and attempts to read
+// the GITHUB_TOKEN environment variable for authentication.
+// Returns a pointer to the initialized Client.
 func NewClient() *Client {
 	return &Client{
 		http:  &http.Client{},

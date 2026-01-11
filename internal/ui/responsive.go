@@ -10,10 +10,20 @@ import (
 // ResponsiveLayout handles responsive design for different terminal sizes
 type ResponsiveLayout struct {
 	Width  int
+}
+// ResponsiveLayout manages responsive UI layout calculations
+type ResponsiveLayout struct {
+	Width  int
 	Height int
 }
 
-// NewResponsiveLayout creates a layout for given dimensions
+// NewResponsiveLayout creates a layout for given dimensions.
+// It initializes a responsive layout manager with the specified width and height
+// for handling adaptive UI rendering across different terminal sizes.
+// Parameters:
+//   - width: Terminal width in characters
+//   - height: Terminal height in characters
+// Returns a pointer to the initialized ResponsiveLayout.
 func NewResponsiveLayout(width, height int) *ResponsiveLayout {
 	return &ResponsiveLayout{Width: width, Height: height}
 }
