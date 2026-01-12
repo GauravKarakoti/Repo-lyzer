@@ -269,11 +269,16 @@ func ExportPDF(data AnalysisResult, _ string) (string, error) {
 	for _, bytes := range data.Languages {
 		total += bytes
 	}
-	for lang, bytes := range data.Languages {
-		pct := float64(bytes) / float64(total) * 100
-		pdf.Cell(0, 8, fmt.Sprintf("- %s: %.1f%%", lang, pct))
-		pdf.Ln(6)
-	}
+		if total == 0 {  
+		pdf.Cell(0, 8, "No language data available")  
+		pdf.Ln(6)  
+	} else {  
+		for lang, bytes := range data.Languages {  
+			pct := float64(bytes) / float64(total) * 100  
+			pdf.Cell(0, 8, fmt.Sprintf("- %s: %.1f%%", lang, pct))  
+			pdf.Ln(6)  
+		}  
+	}  
 	pdf.Ln(9)
 
 	pdf.SetFont("Arial", "B", 14)
