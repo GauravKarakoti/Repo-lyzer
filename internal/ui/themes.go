@@ -208,3 +208,20 @@ func init() {
 	// Apply default theme on startup
 	ApplyTheme(CurrentTheme)
 }
+
+// SetThemeByName sets the theme by its name
+func SetThemeByName(name string) bool {
+	for i, theme := range AvailableThemes {
+		if theme.Name == name {
+			CurrentThemeIndex = i
+			ApplyTheme(theme)
+			return true
+		}
+	}
+	return false
+}
+
+// GetCurrentThemeName returns the name of the current theme
+func GetCurrentThemeName() string {
+	return CurrentTheme.Name
+}
