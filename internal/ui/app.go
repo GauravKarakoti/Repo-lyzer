@@ -10,6 +10,7 @@ import (
 
 	"github.com/agnivo988/Repo-lyzer/internal/analyzer"
 	"github.com/agnivo988/Repo-lyzer/internal/cache"
+	"github.com/agnivo988/Repo-lyzer/internal/config"
 	"github.com/agnivo988/Repo-lyzer/internal/github"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -60,10 +61,13 @@ type MainModel struct {
 	historyCursor   int            // Current selection in history
 	helpContent     string         // Content for help screen
 	settingsOption  string         // Selected settings option
-	cache           *cache.Cache   // Offline cache for analysis results
-	cacheStatus     string         // Cache status: "fresh", "cached", "expired", ""
-	favorites       *Favorites     // Favorite repositories
-	favoritesCursor int            // Current selection in favorites
+	cache           *cache.Cache       // Offline cache for analysis results
+	cacheStatus     string             // Cache status: "fresh", "cached", "expired", ""
+	favorites       *Favorites         // Favorite repositories
+	favoritesCursor int                // Current selection in favorites
+	appConfig       *config.AppSettings // Application settings
+	tokenInput      string             // Buffer for token input
+	inTokenInput    bool               // Whether currently inputting token
 }
 
 // NewMainModel creates a new main application model with default settings.
@@ -78,14 +82,22 @@ func NewMainModel() MainModel {
 	// Initialize cache
 	repoCache, _ := cache.NewCache()
 
+	// Load application settings
+	appConfig, _ := config.LoadSettings()
+
+	// Apply saved theme
+	if appConfig != nil && appConfig.ThemeName != "" {
+		SetThemeByName(appConfig.ThemeName)
+	}
+
 	return MainModel{
 		state:       stateMenu,
 		menu:        NewMenuModel(),
 		spinner:     s,
 		dashboard:   NewDashboardModel(),
 		tree:        NewTreeModel(nil),
-		appSettings: nil,
 		cache:       repoCache,
+		appConfig:   appConfig,
 	}
 }
 
@@ -526,22 +538,56 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case stateSettings:
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
+			// Handle token input mode separately
+			if m.inTokenInput {
+				switch msg.Type {
+				case tea.KeyEnter:
+					// Save the token
+					if m.appConfig != nil && m.tokenInput != "" {
+						m.appConfig.SetGitHubToken(m.tokenInput)
+						m.err = fmt.Errorf("✓ GitHub token saved")
+					}
+					m.inTokenInput = false
+					m.tokenInput = ""
+				case tea.KeyEsc:
+					m.inTokenInput = false
+					m.tokenInput = ""
+				case tea.KeyBackspace:
+					if len(m.tokenInput) > 0 {
+						m.tokenInput = m.tokenInput[:len(m.tokenInput)-1]
+					}
+				case tea.KeyRunes:
+					m.tokenInput += string(msg.Runes)
+				}
+				return m, tea.Batch(cmds...)
+			}
+
 			switch msg.String() {
 			case "q", "esc":
 				m.state = stateMenu
 			case "t":
-				// Cycle through themes
-				theme := CycleTheme()
-				m.err = fmt.Errorf("Theme changed to: %s", theme.Name)
+				// Cycle through themes (theme settings)
+				if m.settingsOption == "theme" || m.settingsOption == "" {
+					theme := CycleTheme()
+					if m.appConfig != nil {
+						m.appConfig.SetTheme(theme.Name)
+					}
+					m.err = fmt.Errorf("Theme changed to: %s", theme.Name)
+				}
 			case "1", "2", "3", "4", "5", "6", "7":
-				// Select theme by number
-				idx := int(msg.String()[0] - '1')
-				if idx >= 0 && idx < len(AvailableThemes) {
-					theme := SetThemeByIndex(idx)
-					m.err = fmt.Errorf("Theme: %s", theme.Name)
+				// Select theme by number (theme settings)
+				if m.settingsOption == "theme" || m.settingsOption == "" {
+					idx := int(msg.String()[0] - '1')
+					if idx >= 0 && idx < len(AvailableThemes) {
+						theme := SetThemeByIndex(idx)
+						if m.appConfig != nil {
+							m.appConfig.SetTheme(theme.Name)
+						}
+						m.err = fmt.Errorf("Theme: %s", theme.Name)
+					}
 				}
 			case "e":
-				// Toggle cache enabled (only in cache settings)
+				// Toggle cache enabled (cache settings)
 				if m.settingsOption == "cache" && m.cache != nil {
 					cfg := m.cache.GetConfig()
 					m.cache.SetEnabled(!cfg.Enabled)
@@ -552,7 +598,7 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 			case "a":
-				// Toggle auto-cache (only in cache settings)
+				// Toggle auto-cache (cache settings)
 				if m.settingsOption == "cache" && m.cache != nil {
 					cfg := m.cache.GetConfig()
 					m.cache.SetAutoCache(!cfg.AutoCache)
@@ -563,16 +609,44 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 			case "c":
-				// Clear all cache (only in cache settings)
+				// Clear all cache (cache settings) or clear token (token settings)
 				if m.settingsOption == "cache" && m.cache != nil {
 					m.cache.Clear()
 					m.err = fmt.Errorf("Cache cleared")
+				} else if m.settingsOption == "token" && m.appConfig != nil {
+					m.appConfig.ClearGitHubToken()
+					m.err = fmt.Errorf("GitHub token cleared")
 				}
 			case "x":
-				// Clean expired entries (only in cache settings)
+				// Clean expired entries (cache settings)
 				if m.settingsOption == "cache" && m.cache != nil {
 					removed := m.cache.CleanExpired()
 					m.err = fmt.Errorf("Removed %d expired entries", removed)
+				}
+			case "f":
+				// Cycle export format (export settings)
+				if m.settingsOption == "export" && m.appConfig != nil {
+					newFormat := m.appConfig.CycleExportFormat()
+					m.err = fmt.Errorf("Export format: %s", newFormat.DisplayName())
+				}
+			case "i":
+				// Enter token input mode (token settings)
+				if m.settingsOption == "token" {
+					m.inTokenInput = true
+					m.tokenInput = ""
+				}
+			case "y":
+				// Confirm reset (reset settings)
+				if m.settingsOption == "reset" {
+					newSettings, err := config.ResetToDefaults()
+					if err == nil {
+						m.appConfig = newSettings
+						SetThemeByName(newSettings.ThemeName)
+						m.err = fmt.Errorf("✓ All settings reset to defaults")
+					} else {
+						m.err = fmt.Errorf("Failed to reset: %v", err)
+					}
+					m.state = stateMenu
 				}
 			}
 		}
@@ -1496,7 +1570,7 @@ Keybindings:
 Theme changes are applied immediately!
 `, CurrentTheme.Name, themeList)
 	case "cache":
-		title = "� Cachre Settings"
+		title = "💾 Cache Settings"
 
 		// Get cache stats
 		cacheInfo := "Cache not initialized"
@@ -1538,38 +1612,81 @@ Keybindings:
 		content = cacheInfo
 	case "export":
 		title = "📤 Export Options"
-		content = `
-Export formats available:
 
-  • JSON: Structured data export
-  • Markdown: Human-readable reports
-  • PDF: Professional documents
+		// Get current export settings
+		currentFormat := "JSON"
+		exportDir := "~/Downloads/"
+		if m.appConfig != nil {
+			currentFormat = m.appConfig.DefaultExportFormat.DisplayName()
+			exportDir = m.appConfig.ExportDirectory
+		}
 
-Default export location:
-  ~/Downloads/
+		// Build format list with indicator
+		formatList := ""
+		formats := []string{"JSON", "Markdown", "CSV", "HTML"}
+		for _, f := range formats {
+			indicator := "  "
+			if f == currentFormat {
+				indicator = "▶ "
+			}
+			formatList += fmt.Sprintf("  %s%s\n", indicator, f)
+		}
 
-To change export settings:
-  1. Modify export configuration
-  2. Set custom export path
-`
+		content = fmt.Sprintf(`
+Current export format: %s
+Export directory: %s
+
+Available formats:
+%s
+Keybindings:
+  • Press 'f' to cycle through formats
+
+Export formats are saved automatically!
+`, currentFormat, exportDir, formatList)
 	case "token":
 		title = "🔑 GitHub Token"
-		content = `
+
+		// Check if in token input mode
+		if m.inTokenInput {
+			content = fmt.Sprintf(`
+Enter GitHub Personal Access Token:
+
+> %s█
+
+Press Enter to save, ESC to cancel.
+`, m.tokenInput)
+		} else {
+			// Show current token status
+			tokenStatus := "❌ Not configured"
+			tokenDisplay := ""
+			if m.appConfig != nil && m.appConfig.HasGitHubToken() {
+				tokenStatus = "✅ Configured"
+				tokenDisplay = fmt.Sprintf("\nToken: %s", m.appConfig.GetMaskedToken())
+			}
+
+			// Check environment variable
+			envToken := os.Getenv("GITHUB_TOKEN")
+			envStatus := "Not set"
+			if envToken != "" {
+				envStatus = "Set (will be used if app token not configured)"
+			}
+
+			content = fmt.Sprintf(`
 GitHub API Token Configuration:
 
-Current status: Not configured
+Status: %s%s
+Environment: %s
 
-To set up GitHub token:
-  1. Go to GitHub Settings > Developer settings > Personal access tokens
-  2. Create a new token with repo permissions
-  3. Set GITHUB_TOKEN environment variable
-  4. Restart the application
+Keyindings:
+  • Press 'i' to input a new token
+  • Press 'c' to clear saved token
 
-Benefits:
+Benefits of using a token:
   • Higher API rate limits (5000 vs 60 requests/hour)
   • Access to private repositories
   • More detailed analysis
-`
+`, tokenStatus, tokenDisplay, envStatus)
+		}
 	case "reset":
 		title = "🔄 Reset to Defaults"
 		content = `

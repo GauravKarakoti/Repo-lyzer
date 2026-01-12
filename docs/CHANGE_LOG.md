@@ -451,12 +451,12 @@ if m.menu.Done {
 ## Future Enhancements (Not Included)
 
 These items can be implemented in Phase 3:
-- [ ] Settings submenu backend implementation
+- [x] Settings submenu backend implementation ✅ (Completed 2026-01-12)
 - [ ] Help submenu detailed content
 - [ ] Additional UI themes
 - [ ] Keyboard shortcut customization
-- [ ] Configuration file support
-- [ ] User preferences persistence
+- [x] Configuration file support ✅ (Completed 2026-01-12)
+- [x] User preferences persistence ✅ (Completed 2026-01-12)
 
 ---
 

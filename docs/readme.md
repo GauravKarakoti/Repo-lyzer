@@ -27,10 +27,11 @@ It is designed for **developers, recruiters, and open-source enthusiasts** to qu
 - **Repo Maturity Score** – Evaluates age, activity, and structure  
 - **Recruiter Summary** – Quick snapshot for hiring evaluation  
 - **File Tree Viewer** – Browse repository structure in-dashboard  
-- **Export Options** – Export analysis as JSON or Markdown  
+- **Export Options** – Export analysis as JSON, Markdown, CSV, or HTML  
 - **Compare Mode** – Side-by-side repository comparison  
 - **Interactive CLI Menu** – Fully navigable TUI (keyboard driven)  
 - **Colorized Output** – Neon-style colors and ASCII styling  
+- **Settings Persistence** – Theme, export preferences, and GitHub token saved locally  
 
 ---
 
@@ -60,19 +61,19 @@ repo-analyzer/
 │   └── compare.go
 │
 ├── internal/
-│   ├── github/
-│   ├── analyzer/
-│   └── output/
+│   ├── github/       # GitHub API client
+│   ├── analyzer/     # Metric computations
+│   ├── cache/        # Offline caching
+│   ├── config/       # Settings persistence
+│   └── ui/           # TUI components
 │
 ├── docs/
 │   ├── DOCUMENTATION_INDEX.md
 │   ├── QUICK_REFERENCE.md
 │   ├── IMPLEMENTATION_DETAILS.md
 │   ├── ANALYZER_INTEGRATION.md
-│   ├── CHANGE_LOG.md
-│   └── TODO.md
+│   └── CHANGE_LOG.md
 │
-├── config/
 ├── main.go
 ├── go.mod
 └── README.md
@@ -118,6 +119,8 @@ repo-analyzer/
 | `cmd/` | CLI commands |
 | `internal/github/` | GitHub API client |
 | `internal/analyzer/` | Metric computations |
+| `internal/cache/` | Offline caching |
+| `internal/config/` | Settings persistence |
 | `internal/ui/` | TUI components |
 | `internal/output/` | Formatting & rendering |
 | `docs/` | Documentation |
