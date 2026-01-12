@@ -40,6 +40,9 @@ type DashboardModel struct {
 	cacheStatus string // "fresh", "cached", or ""
 }
 
+// NewDashboardModel creates a new dashboard model for displaying analysis results.
+// It initializes an empty dashboard that can be populated with analysis data.
+// Returns the initialized DashboardModel.
 func NewDashboardModel() DashboardModel {
 	return DashboardModel{
 		currentView: viewOverview,

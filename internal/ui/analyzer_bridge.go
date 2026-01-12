@@ -20,7 +20,12 @@ type AnalyzerDataBridge struct {
 	cache         map[string]interface{}
 }
 
-// NewAnalyzerDataBridge creates a new data bridge with analyzer results
+// NewAnalyzerDataBridge creates a new data bridge with analyzer results.
+// It initializes the bridge with repository data, metrics, and analysis results
+// to provide a clean interface between the analyzer logic and UI components.
+// Parameters:
+//   - result: AnalysisResult containing all repository analysis data
+// Returns a pointer to the initialized AnalyzerDataBridge.
 func NewAnalyzerDataBridge(result AnalysisResult) *AnalyzerDataBridge {
 	return &AnalyzerDataBridge{
 		repo:          result.Repo,

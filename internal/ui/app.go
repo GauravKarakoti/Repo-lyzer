@@ -71,6 +71,10 @@ type MainModel struct {
 	inTokenInput    bool               // Whether currently inputting token
 }
 
+// NewMainModel creates a new main application model with default settings.
+// It initializes all sub-models (menu, dashboard, tree, etc.) and sets up
+// the spinner with appropriate styling for the loading state.
+// Returns the initialized MainModel with state set to menu.
 func NewMainModel() MainModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
