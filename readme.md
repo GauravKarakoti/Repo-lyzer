@@ -185,7 +185,7 @@ Export to JSON or Markdown from dashboard.
 ## 📦 Installation (For Users)
 
 ```bash
-go install github.com/agnivo988/Repo-lyzer@v1.0.0
+go install github.com/agnivo988/Repo-lyzer@v1.0.5
 repo-lyzer
 ```
 
