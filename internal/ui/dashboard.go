@@ -462,7 +462,7 @@ func boolToYesNo(b bool) string {
 }
 
 func (m DashboardModel) dependenciesView() string {
-	header := TitleStyle.Render(" Dependenrcies")
+	header := TitleStyle.Render("📦 Dependencies")
 
 	if m.data.Dependencies == nil || len(m.data.Dependencies.Files) == 0 {
 		return lipgloss.JoinVertical(lipgloss.Left, header, BoxStyle.Render("No dependency files found"))
